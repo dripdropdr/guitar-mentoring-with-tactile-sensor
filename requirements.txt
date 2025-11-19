@@ -1,0 +1,5 @@
+# Guitar Mentoring with Tactile Sensor - Python Dependencies
+
+# Audio playback
+pygame>=2.0.0
+
