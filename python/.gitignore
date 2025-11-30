@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# ML 모델 파일 (큰 파일이므로 필요시 별도 관리)
+*.pkl
+*.h5
+*.pt
+*.onnx
+
+# IDE
+.vscode/
+.idea/
+
+
