@@ -13,44 +13,54 @@ export interface ChordData {
 /**
  * Chord mapping: chord name -> {fret_positions, string_positions}
  * This should match the chord_rules in python/ml/classifier.py
+ * 
+ * Note: fret_positions and string_positions are paired by index.
+ * For example, fret_positions[0] pairs with string_positions[0]
+ * to form the position (fret, string) = (fret_positions[0], string_positions[0])
  */
-const CHORD_MAPPING: Record<string, { fret_positions: number[]; string_positions: number[] }> = {
-  'C major': {
-    fret_positions: [0, 2, 3],
-    string_positions: [0, 2, 3],
-  },
-  'G minor': {
-    fret_positions: [], // TODO: Add when defined in classifier.py
-    string_positions: [],
-  },
-  // Add more chords as needed
-  'G major': {
-    fret_positions: [3, 0, 0, 0, 2, 3],
-    string_positions: [0, 1, 2, 3, 4, 5],
-  },
-  'D major': {
-    fret_positions: [2, 2, 2, 0],
-    string_positions: [0, 1, 2, 3],
-  },
-  'A minor': {
-    fret_positions: [0, 1, 2, 2, 0, 0],
-    string_positions: [0, 1, 2, 3, 4, 5],
-  },
-  'E minor': {
-    fret_positions: [0, 0, 0, 2, 2, 0],
-    string_positions: [0, 1, 2, 3, 4, 5],
-  },
-  'F major': {
-    fret_positions: [1, 3, 3, 2, 1, 1],
-    string_positions: [0, 1, 2, 3, 4, 5],
-  },
-};
+/**
+ * Chord mapping cache - loaded from server
+ * This is populated by fetchChordRules() and kept in sync with python/ml/classifier.py
+ * No need to manually sync - always fetched from the single source of truth (server)
+ */
+let CHORD_MAPPING_CACHE: Record<string, { fret_positions: number[]; string_positions: number[] }> | null = null;
+
+/**
+ * Fetch all chord rules from the server
+ * This ensures the frontend always uses the same chord definitions as the backend
+ */
+export async function fetchChordRules(): Promise<Record<string, { fret_positions: number[]; string_positions: number[] }>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/chords`);
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+    const chordRules = await response.json();
+    CHORD_MAPPING_CACHE = chordRules;
+    return chordRules;
+  } catch (error) {
+    console.error('Failed to fetch chord rules:', error);
+    throw error;
+  }
+}
 
 /**
  * Get fret and string positions for a given chord name
+ * Fetches from server if cache is not available
+ * 
+ * Note: fret_positions and string_positions are paired by index.
+ * For example, fret_positions[0] pairs with string_positions[0]
+ * to form the position (fret, string) = (fret_positions[0], string_positions[0])
  */
-export function getChordPositions(chordName: string): { fret_positions: number[]; string_positions: number[] } | null {
-  return CHORD_MAPPING[chordName] || null;
+export async function getChordPositions(chordName: string): Promise<{ fret_positions: number[]; string_positions: number[] } | null> {
+  // If cache is not available, fetch from server
+  if (!CHORD_MAPPING_CACHE) {
+    await fetchChordRules();
+  }
+  console.log(CHORD_MAPPING_CACHE?.[chordName]);
+  console.log(CHORD_MAPPING_CACHE);
+  console.log(chordName);
+  return CHORD_MAPPING_CACHE?.[chordName] || null;
 }
 
 /**

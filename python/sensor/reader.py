@@ -9,9 +9,9 @@ import numpy as np
 import time
 
 # # UI test
-# SERIAL_PORT = '/dev/tty.usbserial-0001'    # Change this based on your ESP32 port
-# BAUD_RATE = 250000       # Match the ESP32 code
-# # ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0.05)
+SERIAL_PORT = '/dev/tty.usbserial-0001'    # Change this based on your ESP32 port
+BAUD_RATE = 250000       # Match the ESP32 code
+ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0.05)
 # ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0.01, 
 #                     write_timeout=0.01, inter_byte_timeout=0.001)
 
@@ -60,4 +60,6 @@ def start_sensor_stream(callback):
         callback(data)
         time.sleep(0.1)
 
-
+    # import python.ml.classifier as classifier
+    # chord, fret_positions, string_positions = classifier.classify_code(data)
+    # print(chord, fret_positions, string_positions)
