@@ -1,4 +1,9 @@
-import serial
+try:
+    import serial
+    SERIAL_AVAILABLE = True
+except ImportError:
+    SERIAL_AVAILABLE = False
+    serial = None
 import random
 import numpy as np
 import time
@@ -15,9 +20,14 @@ def read_sensor_data():
     Read sensor data from the sensor and return the data as a numpy array.
     
     Returns:
-        numpy array: sensor data (6x11 matrix)
+        numpy array: sensor data (6x11 matrix) or None if not available
     """
+    if not SERIAL_AVAILABLE:
+        return None
+    
     try:
+        # Note: ser is not defined here - would need to be initialized elsewhere
+        # This is a placeholder for when actual hardware is connected
         line = ser.readline().decode('utf-8', errors='ignore').strip()  # Read a line from serial, decode it
         if "Matrix updated:" in line:                          # If the trigger line is received
             # 6 lines to the pre-allocated list to minimize memory allocation

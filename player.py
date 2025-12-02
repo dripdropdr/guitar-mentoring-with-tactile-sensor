@@ -152,9 +152,20 @@ if __name__ == "__main__":
     running = True
     clock = pygame.time.Clock()
     
-    # Create a small invisible window to capture keyboard events
-    screen = pygame.display.set_mode((1, 1))
-    pygame.display.set_caption("Chord Player")
+    # Create a visible window to capture keyboard events (needs focus to work)
+    screen = pygame.display.set_mode((300, 100))
+    pygame.display.set_caption("Chord Player - Click window and press keys")
+    
+    # Fill with a simple background
+    screen.fill((30, 30, 30))
+    font = pygame.font.Font(None, 24)
+    text = font.render("Click here, then press keys", True, (255, 255, 255))
+    text_rect = text.get_rect(center=(150, 50))
+    screen.blit(text, text_rect)
+    pygame.display.flip()
+    
+    print("IMPORTANT: Click on the 'Chord Player' window to give it focus!")
+    print("Then press keys to play chords.\n")
     
     while running:
         for event in pygame.event.get():
@@ -172,6 +183,9 @@ if __name__ == "__main__":
                         chord = KEY_CHORD_MAP[key_name]
                         # Play chord (non-blocking, so it can be interrupted)
                         test_player.player(chord, blocking=False)
+                    elif key_name == 'q' and pygame.key.get_mods() & pygame.KMOD_SHIFT:
+                        # Allow Q to quit when shift is held
+                        running = False
         
         clock.tick(60)  # Limit to 60 FPS
     
