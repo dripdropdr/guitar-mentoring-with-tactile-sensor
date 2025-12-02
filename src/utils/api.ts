@@ -11,56 +11,41 @@ export interface ChordData {
 }
 
 /**
- * Chord mapping: chord name -> {fret_positions, string_positions}
- * This should match the chord_rules in python/ml/classifier.py
- * 
- * Note: fret_positions and string_positions are paired by index.
- * For example, fret_positions[0] pairs with string_positions[0]
- * to form the position (fret, string) = (fret_positions[0], string_positions[0])
- */
-/**
- * Chord mapping cache - loaded from server
- * This is populated by fetchChordRules() and kept in sync with python/ml/classifier.py
- * No need to manually sync - always fetched from the single source of truth (server)
- */
-let CHORD_MAPPING_CACHE: Record<string, { fret_positions: number[]; string_positions: number[] }> | null = null;
-
-/**
- * Fetch all chord rules from the server
- * This ensures the frontend always uses the same chord definitions as the backend
- */
-export async function fetchChordRules(): Promise<Record<string, { fret_positions: number[]; string_positions: number[] }>> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/chords`);
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
-    }
-    const chordRules = await response.json();
-    CHORD_MAPPING_CACHE = chordRules;
-    return chordRules;
-  } catch (error) {
-    console.error('Failed to fetch chord rules:', error);
-    throw error;
-  }
-}
-
-/**
  * Get fret and string positions for a given chord name
- * Fetches from server if cache is not available
+ * Always fetches directly from server (no cache) - ensures latest data from classifier.py
  * 
  * Note: fret_positions and string_positions are paired by index.
  * For example, fret_positions[0] pairs with string_positions[0]
  * to form the position (fret, string) = (fret_positions[0], string_positions[0])
  */
 export async function getChordPositions(chordName: string): Promise<{ fret_positions: number[]; string_positions: number[] } | null> {
-  // If cache is not available, fetch from server
-  if (!CHORD_MAPPING_CACHE) {
-    await fetchChordRules();
+  try {
+    // URL 인코딩: 공백을 %20으로 변환 (예: "C major" -> "C%20major")
+    const encodedChordName = encodeURIComponent(chordName);
+    const response = await fetch(`${API_BASE_URL}/api/chords/${encodedChordName}`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn(`Chord "${chordName}" not found on server`);
+        return null;
+      }
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // 서버에서 에러 응답이 오는 경우 처리
+    if (data.error) {
+      console.warn(`Chord "${chordName}" not found:`, data.error);
+      return null;
+    }
+
+    console.log(data);
+    return data;
+  } catch (error) {
+    console.error(`Failed to fetch chord positions for "${chordName}":`, error);
+    return null;
   }
-  console.log(CHORD_MAPPING_CACHE?.[chordName]);
-  console.log(CHORD_MAPPING_CACHE);
-  console.log(chordName);
-  return CHORD_MAPPING_CACHE?.[chordName] || null;
 }
 
 /**
