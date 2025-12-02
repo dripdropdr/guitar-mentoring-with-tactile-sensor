@@ -3,12 +3,12 @@ import typing as tp
 
 chord_rules = {
     "G major": {
-        "string": [0, 1, 5],
-        "fret":   [2, 1, 2],
+        "string": [0, 4, 5],
+        "fret":   [5, 3, 5],
     },
     "A minor": {
         "string": [2, 3, 4],
-        "fret":   [1, 1, 0],
+        "fret":   [1, 3, 3],
     },
     "C major": {
         "string": [1, 2, 4],
