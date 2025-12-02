@@ -2,14 +2,26 @@ import numpy as np
 import typing as tp
 
 chord_rules = {
-    "C major": {
-        "notes": ["C", "E", "G"],
-        "fret": [0, 2, 3],
-        "string": [0, 2, 3],
+    "G major": {
+        "string": [0, 1, 5],
+        "fret":   [2, 1, 2],
     },
-    "G minor": {
-        "notes": ["G", "B", "D"],
-    }
+    "A minor": {
+        "string": [2, 3, 4],
+        "fret":   [1, 1, 0],
+    },
+    "C major": {
+        "string": [1, 2, 4],
+        "fret":   [2, 1, 0],
+    },
+    "D major": {
+        "string": [0, 1, 2, 3, 4, 5],
+        "fret":   [1, 2, 1],
+    },
+    "E minor": {
+        "string": [1, 2],
+        "fret":   [1, 1],
+    },
 }
 
 def classify_chord(binary_matrix: np.array) -> str:
