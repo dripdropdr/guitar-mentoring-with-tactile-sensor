@@ -7,15 +7,25 @@ interface GuitarProps {
 
 export function Guitar({ targetChord }: GuitarProps) {
     const [strings] = useState(6);
-    const [frets] = useState(11);
+    const [frets] = useState(11); // including false frets X 1 X 3 X 5 X 7 X 9 X
     const [chordData, setChordData] = useState<ChordData | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showPopup, setShowPopup] = useState(false);
 
     // Calculate target positions from targetChord
-    const targetPositions = useMemo(() => {
-        if (!targetChord) return null;
-        return getChordPositions(targetChord);
+    const [targetPositions, setTargetPositions] = useState<{ fret_positions: number[]; string_positions: number[] } | null>(null);
+
+    useEffect(() => {
+        const loadTargetPositions = async () => {
+            if (!targetChord) {
+                setTargetPositions(null);
+                return;
+            }
+            const positions = await getChordPositions(targetChord);
+            setTargetPositions(positions);
+        };
+        loadTargetPositions();
     }, [targetChord]);
 
     useEffect(() => {
@@ -40,8 +50,16 @@ export function Guitar({ targetChord }: GuitarProps) {
         return () => clearInterval(interval);
     }, []);
 
+    // Check if a fret is a separator fret (should not be activated)
+    const isSeparatorFret = (fret: number): boolean => {
+        return fret === 0 || fret === 2 || fret === 4 || fret === 6 || fret === 8 || fret === 10;
+    };
+
     // Check if a position is active based on fret and string positions
     const isPositionActive = (fret: number, string: number): boolean => {
+        // Separator frets should never be active
+        if (isSeparatorFret(fret)) return false;
+        
         if (!chordData || !chordData.fret_positions || !chordData.string_positions) return false;
 
         // Check if this fret-string combination exists in the positions arrays
@@ -55,6 +73,9 @@ export function Guitar({ targetChord }: GuitarProps) {
 
     // Check if a position is a target position
     const isTargetPosition = (fret: number, string: number): boolean => {
+        // Separator frets should never be target positions
+        if (isSeparatorFret(fret)) return false;
+        
         if (!targetPositions || !targetPositions.fret_positions || !targetPositions.string_positions) return false;
 
         // Check if this fret-string combination exists in the target positions arrays
@@ -71,31 +92,33 @@ export function Guitar({ targetChord }: GuitarProps) {
         return isPositionActive(fret, string) && isTargetPosition(fret, string);
     };
 
+    // Handle cell click/touch
+    const handleCellClick = (fret: number, string: number) => {
+        if (isSeparatorFret(fret)) {
+            setShowPopup(true);
+            // Auto-hide popup after 3 seconds
+            setTimeout(() => setShowPopup(false), 3000);
+        }
+    };
+
     return (
         <div className="guitar-container">
-            {/* Header with status */}
-            {/* <div className="guitar-header">
-                <h2>Guitar Chord Visualizer</h2>
-                <div
-                    className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}
-                    title={isConnected ? 'Connected' : 'Disconnected'}
-                />
-            </div> */}
 
-            {/* Current chord display */}
-            {/* <div className="chord-display">
-                <div className="chord-display-label">
-                    Current Chord:
-                </div>
-                <div className="chord-display-value">
-                    {chordData?.chord || 'No data'}
-                </div>
-            </div> */}
 
             {/* Error message */}
             {error && (
                 <div className="error-message">
                     {error}
+                </div>
+            )}
+
+            {/* Popup warning for separator frets */}
+            {showPopup && (
+                <div className="separator-popup" onClick={() => setShowPopup(false)}>
+                    <div className="separator-popup-content">
+                        <p>Do not touch this part</p>
+                        <p className="separator-popup-subtitle">(Separator fret)</p>
+                    </div>
                 </div>
             )}
 
@@ -127,10 +150,13 @@ export function Guitar({ targetChord }: GuitarProps) {
                                     const isActive = isPositionActive(fretIndex, stringIndex);
                                     const isTarget = isTargetPosition(fretIndex, stringIndex);
                                     const isCorrect = isCorrectPosition(fretIndex, stringIndex);
+                                    const isSeparator = isSeparatorFret(fretIndex);
                                     
                                     // Determine class names based on state
                                     let cellClassName = 'fret-cell';
-                                    if (isCorrect) {
+                                    if (isSeparator) {
+                                        cellClassName += ' separator';
+                                    } else if (isCorrect) {
                                         cellClassName += ' correct';
                                     } else if (isActive) {
                                         cellClassName += ' active';
@@ -142,8 +168,16 @@ export function Guitar({ targetChord }: GuitarProps) {
                                         <div
                                             key={stringIndex}
                                             className={cellClassName}
+                                            onClick={() => handleCellClick(fretIndex, stringIndex)}
+                                            onTouchStart={() => handleCellClick(fretIndex, stringIndex)}
+                                            style={{ cursor: isSeparator ? 'not-allowed' : 'default' }}
                                         >
-                                            {(isActive || isTarget) && (
+                                            {isTarget && (
+                                                <span className="fret-cell-marker target-marker">
+                                                    ●
+                                                </span>
+                                            )}
+                                            {isActive && !isTarget && (
                                                 <span className="fret-cell-marker">
                                                     ●
                                                 </span>
@@ -157,29 +191,6 @@ export function Guitar({ targetChord }: GuitarProps) {
                 </div>
                 </div>
             </div>
-
-            {/* Info section */}
-            {/* <div className="guitar-info">
-                <div>
-                    <strong>Grid:</strong> {strings} strings × {frets} frets
-                </div>
-                <div>
-                    <strong>API Endpoint:</strong> http://127.0.0.1:8000/api/sensor/processed
-                </div>
-                <div>
-                    <strong>Update Rate:</strong> 200ms
-                </div>
-                {chordData && (
-                    <>
-                        <div>
-                            <strong>Fret Positions:</strong> [{chordData.fret_positions?.join(', ') || 'None'}]
-                        </div>
-                        <div>
-                            <strong>String Positions:</strong> [{chordData.string_positions?.join(', ') || 'None'}]
-                        </div>
-                    </>
-                )}
-            </div> */}
         </div>
     );
 }
