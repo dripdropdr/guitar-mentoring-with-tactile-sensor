@@ -5,7 +5,7 @@ import { ChordButton } from '../components/ChordButton';
 
 export function SelectCode() {
     const navigate = useNavigate();
-    const chords = ['C major', 'G major', 'D major', 'A minor', 'E minor', 'F major'];
+    const chords = ['A minor', 'C major', 'D major', 'E minor', 'G major'];
 
     const handleBackToHome = () => {
         navigate('/');
