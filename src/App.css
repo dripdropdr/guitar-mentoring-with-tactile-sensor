@@ -504,7 +504,7 @@ button:disabled {
 }
 
 .fret-cell {
-  width: 45px;
+  width: 80px;
   height: 45px;
   border: 2px solid #555;
   border-radius: 6px;
@@ -557,6 +557,7 @@ button:disabled {
 }
 
 .fret-cell.separator {
+  width: 30px;
   background-color: #3a3a3a;
   border-color: #666;
   opacity: 0.6;
@@ -821,4 +822,19 @@ button:disabled {
 .practice-instructions ol {
   margin-bottom: 0;
   line-height: 1.8;
+}
+
+.orange-cell {
+  color: #FF9800;
+  font-weight: bold;
+}
+
+.red-cell {
+  color: #f44336;
+  font-weight: bold;
+}
+
+.green-cell {
+  color: #4CAF50;
+  font-weight: bold;
 }

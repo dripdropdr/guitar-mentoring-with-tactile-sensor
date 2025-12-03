@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { getProcessedChordData, ChordData, getChordPositions } from '../utils/api';
+import { useNotifications } from '../hooks/useNotifications';
 
 interface GuitarProps {
     targetChord?: string;
@@ -12,6 +13,9 @@ export function Guitar({ targetChord }: GuitarProps) {
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showPopup, setShowPopup] = useState(false);
+    const hasPlayedRef = useRef<boolean>(false);
+    const { add, remove } = useNotifications();
+    const separatorNotificationIdRef = useRef<string | null>(null);
 
     // Calculate target positions from targetChord
     const [targetPositions, setTargetPositions] = useState<{ fret_positions: number[]; string_positions: number[] } | null>(null);
@@ -20,10 +24,12 @@ export function Guitar({ targetChord }: GuitarProps) {
         const loadTargetPositions = async () => {
             if (!targetChord) {
                 setTargetPositions(null);
+                hasPlayedRef.current = false;
                 return;
             }
             const positions = await getChordPositions(targetChord);
             setTargetPositions(positions);
+            hasPlayedRef.current = false; // Reset when target chord changes
         };
         loadTargetPositions();
     }, [targetChord]);
@@ -89,21 +95,123 @@ export function Guitar({ targetChord }: GuitarProps) {
 
     // Check if a position is both active and target (correct match)
     const isCorrectPosition = (fret: number, string: number): boolean => {
+        // console.log('fret, string', fret, string);
         return isPositionActive(fret, string) && isTargetPosition(fret, string);
     };
 
+    // Check if any separator fret is currently active
+    const hasActiveSeparatorFret = (): boolean => {
+        if (!chordData || !chordData.fret_positions) return false;
+        
+        for (let i = 0; i < chordData.fret_positions.length; i++) {
+            const fret = chordData.fret_positions[i];
+            if (isSeparatorFret(fret)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // Check if any non-separator fret is currently active
+    const hasActiveNonSeparatorFret = (): boolean => {
+        if (!chordData || !chordData.fret_positions) return false;
+        
+        for (let i = 0; i < chordData.fret_positions.length; i++) {
+            const fret = chordData.fret_positions[i];
+            if (!isSeparatorFret(fret)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // Monitor separator fret and show/hide notification
+    useEffect(() => {
+        const hasSeparator = hasActiveSeparatorFret();
+        const hasNonSeparator = hasActiveNonSeparatorFret();
+
+        if (hasSeparator) {
+            // If separator fret is active and no notification exists, show notification
+            if (!separatorNotificationIdRef.current) {
+                const notificationId = add(
+                    'This is a separator. Please press different part.',
+                    'warning',
+                    false // Don't auto-remove, we'll remove it manually when separator fret is released
+                );
+                separatorNotificationIdRef.current = notificationId;
+            }
+        } else {
+            // If separator fret is not active, remove notification
+            if (separatorNotificationIdRef.current) {
+                remove(separatorNotificationIdRef.current);
+                separatorNotificationIdRef.current = null;
+            }
+        }
+    }, [chordData, add, remove]);
+
+    // Map chord name to audio file name
+    const getChordAudioFile = (chordName: string): string | null => {
+        const chordLower = chordName.toLowerCase();
+        const mapping: { [key: string]: string } = {
+            'c major': 'c.mp3',
+            'g major': 'g.mp3',
+            'd major': 'd.mp3',
+            'a minor': 'am.mp3',
+            'e minor': 'em.mp3',
+        };
+        return mapping[chordLower] || null;
+    };
+
+    // Check if all target positions are correct and play audio
+    useEffect(() => {
+        if (!targetChord || !targetPositions || !chordData) {
+            hasPlayedRef.current = false;
+            return;
+        }
+
+        // Count correct positions
+        let correctCount = 0;
+        let targetCount = 0;
+
+        if (targetPositions.fret_positions && targetPositions.string_positions) {
+            for (let i = 0; i < targetPositions.fret_positions.length; i++) {
+                const fret = targetPositions.fret_positions[i];
+                const string = targetPositions.string_positions[i];
+                if (!isSeparatorFret(fret)) {
+                    targetCount++;
+                    if (isCorrectPosition(fret, string)) {
+                        correctCount++;
+                    }
+                }
+            }
+        }
+
+        // If all target positions are correct, play audio
+        if (targetCount > 0 && correctCount === targetCount && !hasPlayedRef.current) {
+            const audioFile = getChordAudioFile(targetChord);
+            if (audioFile) {
+                const audio = new Audio(`/sounds/${audioFile}`);
+                audio.play().catch(err => {
+                    console.error('Failed to play audio:', err);
+                });
+                hasPlayedRef.current = true;
+            }
+        }
+
+        // Reset hasPlayedRef if correct positions decrease
+        if (correctCount < targetCount) {
+            hasPlayedRef.current = false;
+        }
+    }, [chordData, targetPositions, targetChord]);
+
     // Handle cell click/touch
     const handleCellClick = (fret: number, string: number) => {
-        if (isSeparatorFret(fret)) {
-            setShowPopup(true);
-            // Auto-hide popup after 3 seconds
-            setTimeout(() => setShowPopup(false), 3000);
-        }
+        // Click handling is now done through the notification system
+        // which monitors chordData changes in real-time
     };
 
     return (
         <div className="guitar-container">
-
 
             {/* Error message */}
             {error && (
@@ -112,15 +220,6 @@ export function Guitar({ targetChord }: GuitarProps) {
                 </div>
             )}
 
-            {/* Popup warning for separator frets */}
-            {showPopup && (
-                <div className="separator-popup" onClick={() => setShowPopup(false)}>
-                    <div className="separator-popup-content">
-                        <p>Do not touch this part</p>
-                        <p className="separator-popup-subtitle">(Separator fret)</p>
-                    </div>
-                </div>
-            )}
 
             {/* Guitar fretboard grid */}
             <div className="fretboard-wrapper">

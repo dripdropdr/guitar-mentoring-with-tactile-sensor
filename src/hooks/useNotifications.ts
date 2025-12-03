@@ -15,14 +15,16 @@ export function useNotifications() {
     setItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  const add = useCallback((message: string, kind: Notification['kind'] = 'info') => {
+  const add = useCallback((message: string, kind: Notification['kind'] = 'info', autoRemove: boolean = true) => {
     const id = `notification-${++notificationId}`;
     setItems((prev) => [...prev, { id, message, kind }]);
     
-    // get rid of the notification after 3 seconds
-    setTimeout(() => {
-      remove(id);
-    }, 3000);
+    // get rid of the notification after 3 seconds if autoRemove is true
+    if (autoRemove) {
+      setTimeout(() => {
+        remove(id);
+      }, 3000);
+    }
     
     return id;
   }, [remove]);
