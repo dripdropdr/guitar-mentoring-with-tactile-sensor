@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { getProcessedChordData, ChordData, getChordPositions } from '../utils/api';
-import { useNotifications } from '../hooks/useNotifications';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface GuitarProps {
     targetChord?: string;
@@ -127,27 +127,38 @@ export function Guitar({ targetChord }: GuitarProps) {
 
     // Monitor separator fret and show/hide notification
     useEffect(() => {
+        if (!chordData) return;
+
         const hasSeparator = hasActiveSeparatorFret();
-        const hasNonSeparator = hasActiveNonSeparatorFret();
+        
+        // Debug logging
+        if (chordData.fret_positions && chordData.fret_positions.length > 0) {
+            console.log('Current fret_positions:', chordData.fret_positions);
+            console.log('Has separator fret:', hasSeparator);
+            console.log('Current notification ID:', separatorNotificationIdRef.current);
+        }
 
         if (hasSeparator) {
             // If separator fret is active and no notification exists, show notification
             if (!separatorNotificationIdRef.current) {
+                console.log('Showing separator notification');
                 const notificationId = add(
                     'This is a separator. Please press different part.',
                     'warning',
                     false // Don't auto-remove, we'll remove it manually when separator fret is released
                 );
                 separatorNotificationIdRef.current = notificationId;
+                console.log('Notification ID set to:', notificationId);
             }
         } else {
             // If separator fret is not active, remove notification
             if (separatorNotificationIdRef.current) {
+                console.log('Removing separator notification, ID:', separatorNotificationIdRef.current);
                 remove(separatorNotificationIdRef.current);
                 separatorNotificationIdRef.current = null;
             }
         }
-    }, [chordData, add, remove]);
+    }, [chordData]);
 
     // Map chord name to audio file name
     const getChordAudioFile = (chordName: string): string | null => {
