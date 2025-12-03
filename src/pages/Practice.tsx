@@ -39,7 +39,7 @@ export function Practice() {
     }, [targetChord, isCorrect, score]);
 
     const handleBackToSelection = () => {
-        navigate('/select-course');
+        navigate('/');
     };
 
     const handleNextChord = () => {
@@ -122,10 +122,10 @@ export function Practice() {
                 <h3>How to Practice:</h3>
                 <ol>
                     <li>Look at the target chord above</li>
-                    <li>Play the chord on your guitar</li>
-                    <li>Watch the grid light up as the sensors detect your fingers</li>
-                    <li>When you play correctly, you'll get a success message</li>
-                    <li>Click "Next Practice" to continue</li>
+                    <li><span className="orange-cell">Orange cells</span> are the target chord</li>
+                    <li><span className="red-cell">Red cells</span> are where you press, but are incorrect positions</li>
+                    <li><span className="green-cell">Green cells</span> are where you press, and are correct positions</li>
+                    <li>Enjoy your practice! 🎸</li>
                 </ol>
             </div>
         </div>
