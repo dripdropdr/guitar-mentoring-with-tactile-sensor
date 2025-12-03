@@ -69,7 +69,7 @@ def classify_code(sensor_data: np.array) -> tp.Tuple[str, list[int], list[int]]:
     global previous_chord, previous_fret_positions, previous_string_positions
 
     if sensor_data is not None:
-        binary_matrix = (sensor_data <= 1.5).astype(int)
+        binary_matrix = (sensor_data <= 1.2).astype(int)
         chord_name, fret_positions, string_positions = classify_chord(binary_matrix)
         previous_chord, previous_fret_positions, previous_string_positions = chord_name, fret_positions, string_positions
         return chord_name, fret_positions, string_positions

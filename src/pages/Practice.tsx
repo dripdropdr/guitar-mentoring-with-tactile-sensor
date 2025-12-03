@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Guitar } from '../components/guitar';
 import { getProcessedChordData, ChordData } from '../utils/api';
+import { NotificationHost } from '../components/Notification';
 
 export function Practice() {
     const navigate = useNavigate();
@@ -128,6 +129,7 @@ export function Practice() {
                     <li>Enjoy your practice! 🎸</li>
                 </ol>
             </div>
+            <NotificationHost />
         </div>
     );
 }
