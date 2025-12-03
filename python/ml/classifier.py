@@ -15,7 +15,7 @@ chord_rules = {
         "fret":   [2, 1, 0],
     },
     "D major": {
-        "string": [0, 1, 2, 3, 4, 5],
+        "string": [0, 1, 2],
         "fret":   [1, 2, 1],
     },
     "G minor": {
@@ -33,18 +33,23 @@ def classify_chord(binary_matrix: np.array) -> str:
     # np.where는 (string_indices, fret_indices) 튜플을 반환
     string_indices, fret_indices = np.where(binary_matrix == 1)
     
-    # 리스트로 변환
-    active_strings = sorted(string_indices.tolist())
-    active_frets = sorted(fret_indices.tolist())
+    # 페어를 유지하면서 리스트로 변환 (정렬하지 않음 - 페어링 정보 보존)
+    active_strings = string_indices.tolist()
+    active_frets = fret_indices.tolist()
     
-    # chord_rules와 매칭
+    # chord_rules와 매칭 (비교를 위해 정렬된 버전 사용)
+    active_strings_sorted = sorted(active_strings)
+    active_frets_sorted = sorted(active_frets)
+    
     for chord_name, chord_data in chord_rules.items():
         if "fret" in chord_data and "string" in chord_data:
             # 정렬해서 비교 (순서가 중요하지 않음)
-            if sorted(chord_data["fret"]) == active_frets and \
-               sorted(chord_data["string"]) == active_strings:
+            if sorted(chord_data["fret"]) == active_frets_sorted and \
+               sorted(chord_data["string"]) == active_strings_sorted:
+                # 매칭된 경우 원래 페어링을 유지한 리스트 반환
                 return chord_name, active_frets, active_strings
     
+    # Unknown인 경우도 원래 페어링을 유지한 리스트 반환
     return "Unknown", active_frets, active_strings
 
 previous_chord = None
